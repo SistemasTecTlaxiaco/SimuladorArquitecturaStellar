@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Network Explorer — Arquitectura de Red</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        :root {
+            --bg: #06060f;
+            --surface: #0d0d1f;
+            --card: #13132a;
+            --border: #1e1e40;
+            --primary: #7b5ea7;
+            --accent: #4fc3f7;
+            --gold: #f6c90e;
+            --green: #00e5a0;
+            --red: #ff4d6d;
+            --text: #e8e8ff;
+            --muted: #6b6b9a;
+            --grad: linear-gradient(135deg, #7b5ea7, #4fc3f7);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden
+        }
+
+        /* HEADER */
+        header {
+            background: rgba(13, 13, 31, .95);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px)
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: .75rem
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--grad);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem
+        }
+
+        .logo h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: var(--grad);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent
+        }
+
+        .logo span {
+            font-size: .7rem;
+            color: var(--muted);
+            display: block;
+            font-weight: 400
+        }
+
+        .header-badge {
+            background: rgba(0, 229, 160, .1);
+            border: 1px solid rgba(0, 229, 160, .3);
+            color: var(--green);
+            padding: .3rem .8rem;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 600
+        }
+
+        /* TABS */
+        .tabs {
+            display: flex;
+            gap: .5rem;
+            padding: 1.5rem 2rem .5rem;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .tab {
+            padding: .6rem 1.4rem;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-size: .85rem;
+            font-weight: 500;
+            transition: .2s;
+            color: var(--muted);
+            background: transparent
+        }
+
+        .tab:hover {
+            color: var(--text);
+            border-color: var(--border)
+        }
+
+        .tab.active {
+            background: rgba(123, 94, 167, .2);
+            border-color: var(--primary);
+            color: var(--text)
+        }
+
+        /* PANELS */
+        .panel {
+            display: none;
+            padding: 1.5rem 2rem 2rem
+        }
+
+        .panel.active {
+            display: block
+        }
+
+        /* NETWORK CANVAS TAB */
+        .net-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 1.5rem;
+            height: calc(100vh - 220px);
+            min-height: 500px
+        }
+
+        #netCanvas {
+            width: 100%;
+            height: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            cursor: crosshair;
+            display: block
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem
+        }
+
+        .card h3 {
+            font-size: .8rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: .8rem
+        }
+
+        .node-palette {
+            display: flex;
+            flex-direction: column;
+            gap: .5rem
+        }
+
+        .node-btn {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            padding: .6rem .8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            transition: .2s;
+            color: var(--text);
+            font-size: .82rem
+        }
+
+        .node-btn:hover {
+            border-color: var(--primary);
+            background: rgba(123, 94, 167, .1);
+            transform: translateX(2px)
+        }
+
+        .node-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+
+        .btn-primary {
+            background: var(--grad);
+            color: #fff;
+            border: none;
+            padding: .65rem 1.2rem;
+            border-radius: 8px;
+            font-size: .85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .2s;
+            width: 100%
+        }
+
+        .btn-primary:hover {
+            opacity: .85;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(123, 94, 167, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(255, 77, 109, .15);
+            color: var(--red);
+            border: 1px solid rgba(255, 77, 109, .3);
+            padding: .55rem 1rem;
+            border-radius: 8px;
+            font-size: .82rem;
+            cursor: pointer;
+            transition: .2s;
+            width: 100%
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 77, 109, .25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 77, 109, 0.2);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: .4rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: .82rem
+        }
+
+        .stat-row:last-child {
+            border: none
+        }
+
+        .stat-val {
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent)
+        }
+
+        .info-box {
+            background: rgba(79, 195, 247, .05);
+            border: 1px solid rgba(79, 195, 247, .15);
+            border-radius: 8px;
+            padding: .8rem;
+            font-size: .78rem;
+            color: var(--muted);
+            line-height: 1.6
+        }
+
+        .info-box strong {
+            color: var(--accent)
+        }
+
+        /* ASSETS TAB */
+        .assets-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem
+        }
+
+        .asset-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem
+        }
+
+        .asset-card h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem
+        }
+
+        .form-group {
+            margin-bottom: 1rem
+        }
+
+        .form-group label {
+            display: block;
+            font-size: .78rem;
+            color: var(--muted);
+            margin-bottom: .4rem;
+            font-weight: 500
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: .65rem .9rem;
+            border-radius: 8px;
+            font-size: .85rem;
+            font-family: 'Inter', sans-serif;
+            transition: .2s
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(123, 94, 167, .15)
+        }
+
+        .wallet-display {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1rem
+        }
+
+        .wallet-addr {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .72rem;
+            color: var(--muted);
+            word-break: break-all;
+            margin-bottom: .6rem;
+        }
+
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: .5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: .85rem
+        }
+
+        .balance-row:last-child {
+            border: none
+        }
+
+        .balance-amt {
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--gold)
+        }
+
+        .asset-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            background: rgba(246, 201, 14, .1);
+            border: 1px solid rgba(246, 201, 14, .25);
+            color: var(--gold);
+            padding: .2rem .6rem;
+            border-radius: 20px;
+            font-size: .72rem;
+            font-weight: 600
+        }
+
+        .dex-order {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: .8rem 1rem;
+            margin-bottom: .5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: .82rem
+        }
+
+        .order-buy {
+            border-left: 3px solid var(--green)
+        }
+
+        .order-sell {
+            border-left: 3px solid var(--red)
+        }
+
+        .pill {
+            padding: .2rem .6rem;
+            border-radius: 20px;
+            font-size: .7rem;
+            font-weight: 700
+        }
+
+        .pill-buy {
+            background: rgba(0, 229, 160, .15);
+            color: var(--green)
+        }
+
+        .pill-sell {
+            background: rgba(255, 77, 109, .15);
+            color: var(--red)
+        }
+
+        /* LEARN TAB */
+        .learn-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.2rem
+        }
+
+        .learn-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.4rem;
+            position: relative;
+            overflow: hidden;
+            transition: .3s
+        }
+
+        .learn-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(123, 94, 167, .2)
+        }
+
+        .learn-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--grad)
+        }
+
+        .learn-card .icon {
+            font-size: 2.2rem;
+            margin-bottom: .8rem
+        }
+
+        .learn-card h3 {
+            font-size: .95rem;
+            font-weight: 700;
+            margin-bottom: .5rem
+        }
+
+        .learn-card p {
+            font-size: .82rem;
+            color: var(--muted);
+            line-height: 1.7
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .4rem;
+            margin-top: .8rem
+        }
+
+        .tag {
+            background: rgba(123, 94, 167, .15);
+            border: 1px solid rgba(123, 94, 167, .3);
+            color: var(--primary);
+            padding: .2rem .6rem;
+            border-radius: 20px;
+            font-size: .7rem;
+            font-weight: 600
+        }
+
+        /* TOAST */
+        #toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--card);
+            border: 1px solid var(--green);
+            color: var(--text);
+            padding: .85rem 1.4rem;
+            border-radius: 10px;
+            font-size: .85rem;
+            z-index: 999;
+            transform: translateY(100px);
+            transition: .3s;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .4)
+        }
+
+        #toast.show {
+            transform: translateY(0)
+        }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar {
+            width: 5px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--surface)
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <div class="logo-icon">✦</div>
+            <div>
+                <h1>Stellar Network Explorer</h1>
+                <span>Arquitectura de Red · Activos Digitales</span>
+            </div>
+        </div>
+        <div class="header-badge">🎓 Laboratorio Interactivo</div>
+    </header>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('network',this)">🌐 Red de Nodos</div>
+        <div class="tab" onclick="switchTab('assets',this)">💎 Activos Digitales</div>
+        <div class="tab" onclick="switchTab('learn',this)">📚 Guía de Conceptos</div>
+    </div>
+
+    <!-- TAB: NETWORK -->
+    <div class="panel active" id="panel-network">
+        <div class="net-layout">
+            <canvas id="netCanvas"></canvas>
+            <div class="sidebar">
+                <div class="card">
+                    <h3>➕ Agregar Nodo</h3>
+                    <div class="node-palette">
+                        <div class="node-btn" onclick="setNodeType('validator-full')">
+                            <div class="node-dot" style="background:#7b5ea7"></div>Validador Completo
+                        </div>
+                        <div class="node-btn" onclick="setNodeType('validator-basic')">
+                            <div class="node-dot" style="background:#4fc3f7"></div>Validador Básico
+                        </div>
+                        <div class="node-btn" onclick="setNodeType('rpc')">
+                            <div class="node-dot" style="background:#00e5a0"></div>Nodo RPC
+                        </div>
+                        <div class="node-btn" onclick="setNodeType('watcher')">
+                            <div class="node-dot" style="background:#f6c90e"></div>Nodo Watcher
+                        </div>
+                        <div class="node-btn" onclick="setNodeType('archiver')">
+                            <div class="node-dot" style="background:#ff9a3c"></div>Archiver
+                        </div>
+                        <div class="node-btn" onclick="setNodeType('galexie')">
+                            <div class="node-dot" style="background:#ff4d6d"></div>Galexie
+                        </div>
+                    </div>
+                    <p style="font-size:.72rem;color:var(--muted);margin-top:.6rem">Selecciona un tipo y haz clic en el
+                        canvas para colocarlo.</p>
+                </div>
+                <div class="card">
+                    <h3>⚡ Simulación</h3>
+                    <button class="btn-primary" onclick="sendTransaction()">📤 Enviar Transacción</button>
+                    <div style="height:.5rem"></div>
+                    <button class="btn-primary" style="background:linear-gradient(135deg,#00e5a0,#4fc3f7)"
+                        onclick="startConsensusWave()">🌊 Ola de Consenso</button>
+                    <div style="height:.5rem"></div>
+                    <button class="btn-danger" onclick="clearNetwork()">🗑 Limpiar Red</button>
+                </div>
+                <div class="card">
+                    <h3>📊 Estadísticas</h3>
+                    <div class="stat-row"><span>Nodos Totales</span><span class="stat-val" id="s-total">0</span></div>
+                    <div class="stat-row"><span>Validadores</span><span class="stat-val" id="s-val">0</span></div>
+                    <div class="stat-row"><span>Observadores</span><span class="stat-val" id="s-obs">0</span></div>
+                    <div class="stat-row"><span>Txs Enviadas</span><span class="stat-val" id="s-tx">0</span></div>
+                    <div class="stat-row"><span>Ledger</span><span class="stat-val" id="s-ledger">45,102,331</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="info-box" id="nodeInfo">
+                        👆 Haz clic en un nodo para ver su información detallada.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: ASSETS -->
+    <div class="panel" id="panel-assets">
+        <div class="assets-layout">
+            <div>
+                <div class="asset-card" style="margin-bottom:1.2rem">
+                    <h2>🏦 Tu Cuenta Stellar</h2>
+                    <div class="wallet-display">
+                        <div class="wallet-addr" id="walletAddr">G•••••••••••••••••••••••••••••••••••••••••••••••••••••
+                        </div>
+                        <div style="height:.6rem"></div>
+                        <div class="balance-row"><span>XLM Nativo</span><span class="balance-amt"
+                                id="xlmBal">10,000.00</span></div>
+                        <div id="assetBalances"></div>
+                    </div>
+                    <button class="btn-primary" onclick="genAccount()">🔑 Generar Nueva Cuenta</button>
+                </div>
+                <div class="asset-card">
+                    <h2>⬆️ Emitir Activo Digital</h2>
+                    <div class="form-group"><label>Código del Activo (ej: MXNCB, TOKENEDUF)</label><input id="assetCode"
+                            placeholder="MXNCB" maxlength="12"></div>
+                    <div class="form-group"><label>Cantidad a Emitir</label><input id="assetAmount" type="number"
+                            placeholder="1000000" value="1000000"></div>
+                    <div class="form-group"><label>Tipo de Activo</label>
+                        <select id="assetType">
+                            <option value="stablecoin">💵 Stablecoin (USDC, MXNCB)</option>
+                            <option value="commodity">🥇 Commodity (Oro, Plata)</option>
+                            <option value="token">🪙 Token Educativo</option>
+                            <option value="security">📈 Security Token</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="issueAsset()">✨ Emitir Activo</button>
+                </div>
+            </div>
+            <div>
+                <div class="asset-card" style="margin-bottom:1.2rem">
+                    <h2>🔗 Trustlines Activas</h2>
+                    <div id="trustlines">
+                        <p style="font-size:.82rem;color:var(--muted)">No hay trustlines. Emite un activo para crear
+                            una.</p>
+                    </div>
+                    <div style="height:.8rem"></div>
+                    <div class="form-group"><label>Establecer Trustline con Activo</label>
+                        <input id="trustAsset" placeholder="Código del activo (ej: USDC)">
+                    </div>
+                    <button class="btn-primary" onclick="addTrust()">🔗 Establecer Trustline</button>
+                </div>
+                <div class="asset-card">
+                    <h2>🏛️ DEX — Libro de Órdenes</h2>
+                    <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+                        <input id="dexAmt" type="number" placeholder="Cantidad"
+                            style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.55rem .8rem;border-radius:8px;font-size:.82rem">
+                        <input id="dexPrice" type="number" placeholder="Precio XLM" step="0.01"
+                            style="flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.55rem .8rem;border-radius:8px;font-size:.82rem">
+                    </div>
+                    <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+                        <button onclick="placeOrder('buy')"
+                            style="flex:1;background:rgba(0,229,160,.15);color:var(--green);border:1px solid rgba(0,229,160,.3);padding:.55rem;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer">▲
+                            COMPRAR</button>
+                        <button onclick="placeOrder('sell')"
+                            style="flex:1;background:rgba(255,77,109,.15);color:var(--red);border:1px solid rgba(255,77,109,.3);padding:.55rem;border-radius:8px;font-size:.82rem;font-weight:700;cursor:pointer">▼
+                            VENDER</button>
+                    </div>
+                    <div id="orderBook"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: LEARN -->
+    <div class="panel" id="panel-learn">
+        <div class="learn-grid">
+            <div class="learn-card" style="--grad:linear-gradient(135deg,#7b5ea7,#9c78c7)">
+                <div class="icon">🏛️</div>
+                <h3>Validador Completo (Full Validator)</h3>
+                <p>Columna vertebral de la red. Participa activamente en el consenso SCP y publica un <em>historial de
+                        ledger</em> completo. Permite que nuevos nodos se sincronicen desde cero.</p>
+                <div class="tag-list"><span class="tag">SCP</span><span class="tag">Historial</span><span
+                        class="tag">Quórum</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">🗳️</div>
+                <h3>Validador Básico</h3>
+                <p>Participa en el proceso de votación del consenso pero <em>no publica</em> historial público. Aumenta
+                    la resiliencia del quórum sin costo de almacenamiento.</p>
+                <div class="tag-list"><span class="tag">Consenso</span><span class="tag">Voto</span><span
+                        class="tag">FBA</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">🔌</div>
+                <h3>Nodo RPC (Horizon/Soroban)</h3>
+                <p>Puerta de entrada para aplicaciones. Simula y envía transacciones, consulta el estado actual del
+                    ledger. Es el nodo que usan los desarrolladores de dApps.</p>
+                <div class="tag-list"><span class="tag">API</span><span class="tag">Transacciones</span><span
+                        class="tag">dApps</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">👁️</div>
+                <h3>Nodo Watcher (Observador)</h3>
+                <p>Monitorea la red y envía transacciones en nombre de usuarios. No participa en el consenso. Ideal para
+                    wallets y servicios de pagos.</p>
+                <div class="tag-list"><span class="tag">Monitor</span><span class="tag">Wallet</span><span
+                        class="tag">Pagos</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">📦</div>
+                <h3>Archiver Node</h3>
+                <p>Publica el historial completo del ledger para que nuevos nodos puedan sincronizarse. Mejora la
+                    resiliencia y descentralización de la red.</p>
+                <div class="tag-list"><span class="tag">Historia</span><span class="tag">Resiliencia</span><span
+                        class="tag">Sincronización</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">🔍</div>
+                <h3>Galexie Node</h3>
+                <p>Especializado en recuperación masiva de datos históricos para <em>análisis e indexación</em>. No
+                    envía transacciones. Usado por exploradores de bloques y analíticas.</p>
+                <div class="tag-list"><span class="tag">Indexación</span><span class="tag">Análisis</span><span
+                        class="tag">Big Data</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">✦</div>
+                <h3>XLM — Lumens (Activo Nativo)</h3>
+                <p>Combustible de la red Stellar. Cada cuenta necesita un mínimo de <strong>1 XLM</strong> como reserva
+                    base, más <strong>0.5 XLM</strong> por cada trustline o entrada adicional.</p>
+                <div class="tag-list"><span class="tag">Reserva</span><span class="tag">Fees</span><span
+                        class="tag">Anti-spam</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">🔗</div>
+                <h3>Trustlines — Líneas de Confianza</h3>
+                <p>Para recibir un activo que no sea XLM, tu cuenta debe establecer explícitamente una
+                    <em>trustline</em> con el emisor. Esto protege a los usuarios de activos no deseados.
+                </p>
+                <div class="tag-list"><span class="tag">Seguridad</span><span class="tag">Activos</span><span
+                        class="tag">Consentimiento</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">⚖️</div>
+                <h3>Quórum Slice — Rebanada de Quórum</h3>
+                <p>Cada validador elige un subconjunto de nodos en los que <em>confía</em>. Los quórum slices se
+                    superponen entre validadores creando consenso global sin autoridad central.</p>
+                <div class="tag-list"><span class="tag">FBA</span><span class="tag">Confianza</span><span
+                        class="tag">Descentralización</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">🏛️</div>
+                <h3>DEX — Exchange Descentralizado</h3>
+                <p>Stellar incluye un exchange nativo en el protocolo. Cualquier par de activos puede intercambiarse
+                    usando <em>offers</em> (órdenes) almacenadas directamente en el ledger.</p>
+                <div class="tag-list"><span class="tag">Trading</span><span class="tag">CLOB</span><span
+                        class="tag">On-Chain</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">⚡</div>
+                <h3>Finalidad del Ledger</h3>
+                <p>Stellar cierra un nuevo ledger cada <strong>3-5 segundos</strong>. Una vez confirmada, una
+                    transacción es <em>irreversible</em>. No hay reorganizaciones de cadena como en PoW.</p>
+                <div class="tag-list"><span class="tag">3-5 seg</span><span class="tag">Irreversible</span><span
+                        class="tag">SCP</span></div>
+            </div>
+            <div class="learn-card">
+                <div class="icon">🌐</div>
+                <h3>Federated Byzantine Agreement (FBA)</h3>
+                <p>Base matemática del SCP. Permite alcanzar consenso descentralizado sin requerir que todos los nodos
+                    se conozcan entre sí, a diferencia del PBFT clásico.</p>
+                <div class="tag-list"><span class="tag">Teoría</span><span class="tag">Seguridad</span><span
+                        class="tag">Escalabilidad</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">✅ Acción completada</div>
+
+    <script>
+        // === TABS ===
+        function switchTab(name, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('panel-' + name).classList.add('active');
+            if (name === 'network') setTimeout(resizeCanvas, 50);
+        }
+
+        // === TOAST ===
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2800);
+        }
+
+        // === NETWORK CANVAS ===
+        const canvas = document.getElementById('netCanvas');
+        const ctx = canvas.getContext('2d');
+        let nodes = [], packets = [], selectedType = 'validator-full', txCount = 0;
+        let ledger = 45102331, animFrame, dragNode = null, dashOffset = 0;
+
+        const COLORS = {
+            'validator-full': '#7b5ea7', 'validator-basic': '#4fc3f7',
+            'rpc': '#00e5a0', 'watcher': '#f6c90e', 'archiver': '#ff9a3c', 'galexie': '#ff4d6d'
+        };
+        const LABELS = {
+            'validator-full': 'V. Completo', 'validator-basic': 'V. Básico',
+            'rpc': 'RPC', 'watcher': 'Watcher', 'archiver': 'Archiver', 'galexie': 'Galexie'
+        };
+        const ICONS = { 'validator-full': '🏛', 'validator-basic': '🗳', 'rpc': '🔌', 'watcher': '👁', 'archiver': '📦', 'galexie': '🔍' };
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = canvas.offsetWidth || rect.width - 300;
+            canvas.height = canvas.offsetHeight || 500;
+        }
+
+        function setNodeType(t) {
+            selectedType = t;
+            document.querySelectorAll('.node-btn').forEach(b => b.style.borderColor = '');
+            event.currentTarget.style.borderColor = COLORS[t];
+            toast('Tipo seleccionado: ' + LABELS[t] + ' — Haz clic en el canvas');
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            const r = canvas.getBoundingClientRect();
+            const x = e.clientX - r.left, y = e.clientY - r.top;
+
+            // Check if clicking on existing node for dragging or info
+            for (let i = nodes.length - 1; i >= 0; i--) {
+                let n = nodes[i];
+                if (Math.hypot(n.x - x, n.y - y) < n.r + 10) {
+                    dragNode = n;
+                    showNodeInfo(n);
+                    return;
+                }
+            }
+            // If empty space, add new node
+            addNode(x, y, selectedType);
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const r = canvas.getBoundingClientRect();
+            const x = e.clientX - r.left, y = e.clientY - r.top;
+
+            // Handle dragging
+            if (dragNode) {
+                dragNode.x = x;
+                dragNode.y = y;
+                canvas.style.cursor = 'grabbing';
+                return;
+            }
+
+            // Handle hover state
+            let hovering = false;
+            for (let n of nodes) {
+                if (Math.hypot(n.x - x, n.y - y) < n.r + 10) {
+                    hovering = true;
+                    n.hover = true;
+                } else {
+                    n.hover = false;
+                }
+            }
+            canvas.style.cursor = hovering ? 'grab' : 'crosshair';
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            dragNode = null;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            dragNode = null;
+        });
+
+        function addNode(x, y, type) {
+            nodes.push({
+                x, y, type, r: 20, id: nodes.length + 1,
+                pulse: 0, hover: false, color: COLORS[type], label: LABELS[type], icon: ICONS[type],
+                active: true, connections: []
+            });
+            updateStats(); toast('Nodo ' + LABELS[type] + ' agregado (#' + nodes.length + ')');
+        }
+
+        function showNodeInfo(n) {
+            const infos = {
+                'validator-full': `<strong>Validador Completo</strong><br>Participa en consenso SCP y publica historial. Es la base de la confianza de la red.`,
+                'validator-basic': `<strong>Validador Básico</strong><br>Vota en el consenso pero no publica historial público. Reduce costos de operación.`,
+                'rpc': `<strong>Nodo RPC</strong><br>API para desarrolladores. Simula y envía transacciones. Consulta estado del ledger en tiempo real.`,
+                'watcher': `<strong>Nodo Watcher</strong><br>Observa la red y envía transacciones. Ideal para wallets y servicios de pago.`,
+                'archiver': `<strong>Archiver</strong><br>Almacena y publica el historial completo. Permite sincronización de nuevos nodos.`,
+                'galexie': `<strong>Galexie</strong><br>Recuperación masiva de datos históricos para análisis e indexación. No envía transacciones.`
+            };
+            document.getElementById('nodeInfo').innerHTML = `<strong style="color:${n.color}">${n.icon} Nodo #${n.id}</strong><br><br>${infos[n.type]}`;
+        }
+
+        function updateStats() {
+            const vals = nodes.filter(n => n.type.startsWith('validator')).length;
+            const obs = nodes.filter(n => !n.type.startsWith('validator')).length;
+            document.getElementById('s-total').textContent = nodes.length;
+            document.getElementById('s-val').textContent = vals;
+            document.getElementById('s-obs').textContent = obs;
+            document.getElementById('s-tx').textContent = txCount;
+            document.getElementById('s-ledger').textContent = (ledger).toLocaleString();
+        }
+
+        function sendTransaction() {
+            if (nodes.length < 2) { toast('⚠️ Añade al menos 2 nodos primero'); return; }
+
+            // 1. Origin: Preferably a Watcher or RPC, otherwise random
+            let nonValidators = nodes.filter(n => !n.type.startsWith('validator') && n.type !== 'archiver' && n.type !== 'galexie');
+            let src = nonValidators.length > 0 ? nonValidators[Math.floor(Math.random() * nonValidators.length)] : nodes[Math.floor(Math.random() * nodes.length)];
+
+            // 2. Gateway: Nearest RPC node (if source isn't an RPC)
+            let rpcs = nodes.filter(n => n.type === 'rpc');
+            let gateway = null;
+            if (src.type === 'rpc') {
+                gateway = src;
+            } else if (rpcs.length > 0) {
+                // Find closest RPC
+                gateway = rpcs.reduce((prev, curr) => (Math.hypot(curr.x - src.x, curr.y - src.y) < Math.hypot(prev.x - src.x, prev.y - src.y) ? curr : prev));
+            }
+
+            // 3. Validators to receive the tx
+            let validators = nodes.filter(n => n.type.startsWith('validator'));
+
+            // Step 1: Send from Source to Gateway (if different)
+            let currentDelay = 0;
+            if (gateway && gateway !== src) {
+                packets.push({
+                    x: src.x, y: src.y, sx: src.x, sy: src.y, ex: gateway.x, ey: gateway.y,
+                    prog: 0, color: '#f6c90e', size: 5, speed: 0.03
+                });
+                currentDelay += Math.hypot(gateway.x - src.x, gateway.y - src.y) * 1.5;
+            } else {
+                gateway = src; // If no RPC, origin acts as gateway for the simulation
+            }
+
+            // Step 2: Gateway forwards to Validators
+            if (validators.length > 0) {
+                setTimeout(() => {
+                    gateway.pulse = 1;
+                    validators.forEach(v => {
+                        packets.push({
+                            x: gateway.x, y: gateway.y, sx: gateway.x, sy: gateway.y, ex: v.x, ey: v.y,
+                            prog: 0, color: '#f6c90e', size: 5, speed: 0.02
+                        });
+                    });
+                }, currentDelay);
+
+                // Step 3: Validators Gossip (SCP Consensus miniature wave)
+                setTimeout(() => {
+                    validators.forEach(v1 => {
+                        v1.pulse = 0.8;
+                        validators.forEach(v2 => {
+                            if (v1 !== v2) {
+                                packets.push({
+                                    x: v1.x, y: v1.y, sx: v1.x, sy: v1.y, ex: v2.x, ey: v2.y,
+                                    prog: 0, color: '#7b5ea7', size: 3, speed: 0.04
+                                });
+                            }
+                        });
+                    });
+                }, currentDelay + 600); // Trigger gossip after tx reaches validators
+            } else if (gateway !== src) {
+                // If no validators exist, just send to a random node
+                const dst = nodes[Math.floor(Math.random() * nodes.length)];
+                setTimeout(() => {
+                    packets.push({
+                        x: gateway.x, y: gateway.y, sx: gateway.x, sy: gateway.y, ex: dst.x, ey: dst.y,
+                        prog: 0, color: '#f6c90e', size: 5, speed: 0.02
+                    });
+                }, currentDelay);
+            } else {
+                // Fallback: Random to Random
+                const dst = nodes[Math.floor(Math.random() * nodes.length)];
+                packets.push({
+                    x: src.x, y: src.y, sx: src.x, sy: src.y, ex: dst.x, ey: dst.y,
+                    prog: 0, color: '#f6c90e', size: 5, speed: 0.02
+                });
+            }
+
+            txCount++;
+            updateStats();
+        }
+
+        function startConsensusWave() {
+            if (nodes.length < 1) { toast('⚠️ Añade al menos 1 nodo primero'); return; }
+            const origin = nodes.find(n => n.type.startsWith('validator')) || nodes[0];
+            origin.pulse = 1;
+            nodes.forEach(n => {
+                if (n !== origin) {
+                    setTimeout(() => {
+                        n.pulse = 1;
+                        packets.push({ x: origin.x, y: origin.y, sx: origin.x, sy: origin.y, ex: n.x, ey: n.y, prog: 0, color: '#7b5ea7', size: 4 });
+                    }, Math.hypot(n.x - origin.x, n.y - origin.y) * 2);
+                }
+            });
+            txCount += nodes.length; ledger++; updateStats();
+            toast('🌊 Ola de consenso propagada a ' + nodes.length + ' nodos');
+        }
+
+        function clearNetwork() {
+            nodes = []; packets = [];
+            document.getElementById('nodeInfo').innerHTML = '👆 Haz clic en un nodo para ver su información detallada.';
+            updateStats();
+        }
+
+        function drawNetwork() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // grid
+            ctx.strokeStyle = 'rgba(30,30,64,0.4)'; ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+            for (let y = 0; y < canvas.height; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+
+            // update dash offset
+            dashOffset -= 0.5;
+
+            // connections between validators
+            const vals = nodes.filter(n => n.type.startsWith('validator'));
+            for (let i = 0; i < vals.length; i++) {
+                for (let j = i + 1; j < vals.length; j++) {
+                    ctx.beginPath(); ctx.strokeStyle = 'rgba(123,94,167,0.4)'; ctx.lineWidth = 1.5;
+                    ctx.setLineDash([8, 8]); ctx.lineDashOffset = dashOffset;
+                    ctx.moveTo(vals[i].x, vals[i].y); ctx.lineTo(vals[j].x, vals[j].y); ctx.stroke();
+                }
+            }
+            ctx.setLineDash([]);
+            ctx.lineDashOffset = 0;
+            // packets
+            packets = packets.filter(p => {
+                p.prog += p.speed || 0.02;
+                p.x = p.sx + (p.ex - p.sx) * p.prog;
+                p.y = p.sy + (p.ey - p.sy) * p.prog;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color; ctx.fill();
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size + 4, 0, Math.PI * 2);
+                ctx.fillStyle = p.color + '40'; ctx.fill();
+                return p.prog < 1;
+            });
+            // nodes
+            nodes.forEach(n => {
+                if (n.pulse > 0) {
+                    ctx.beginPath(); ctx.arc(n.x, n.y, n.r + n.pulse * 20, 0, Math.PI * 2);
+                    ctx.strokeStyle = n.color + '60'; ctx.lineWidth = 2; ctx.stroke();
+                    n.pulse = n.pulse > 0.95 ? 0 : n.pulse + 0.05;
+                }
+
+                // radius expansion on hover
+                const currentRadius = n.hover ? n.r + 5 : n.r;
+
+                // shadow
+                ctx.shadowColor = n.color; ctx.shadowBlur = n.hover ? 25 : 15;
+                ctx.beginPath(); ctx.arc(n.x, n.y, currentRadius, 0, Math.PI * 2);
+                ctx.fillStyle = n.color + (n.hover ? '66' : '33'); ctx.fill();
+                ctx.strokeStyle = n.color; ctx.lineWidth = n.hover ? 3 : 2; ctx.stroke();
+                ctx.shadowBlur = 0;
+                // icon
+                ctx.font = '14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(n.icon, n.x, n.y);
+                // label
+                ctx.font = '600 10px Inter'; ctx.fillStyle = '#e8e8ff';
+                ctx.fillText(n.label, n.x, n.y + n.r + 12);
+            });
+            animFrame = requestAnimationFrame(drawNetwork);
+        }
+
+        // === ASSETS ===
+        let accounts = [], currentAccount = null, issuedAssets = [], orders = [];
+
+        function randomAddr() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+            return 'G' + Array.from({ length: 55 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        }
+
+        function genAccount() {
+            const addr = randomAddr();
+            currentAccount = { addr, xlm: 10000, assets: {} };
+            document.getElementById('walletAddr').textContent = addr.slice(0, 8) + '•••••' + addr.slice(-8);
+            document.getElementById('xlmBal').textContent = '10,000.00';
+            document.getElementById('assetBalances').innerHTML = '';
+            issuedAssets = [];
+            renderTrustlines();
+            toast('🔑 Nueva cuenta generada. Balance: 10,000 XLM');
+        }
+
+        function issueAsset() {
+            const code = document.getElementById('assetCode').value.trim().toUpperCase();
+            const amt = parseInt(document.getElementById('assetAmount').value) || 1000000;
+            if (!code) { toast('⚠️ Ingresa un código de activo'); return; }
+            if (!currentAccount) { genAccount(); }
+            if (currentAccount.xlm < 1.5) { toast('⚠️ XLM insuficiente para crear trustline'); return; }
+            currentAccount.xlm -= 0.5;
+            currentAccount.assets[code] = (currentAccount.assets[code] || 0) + amt;
+            if (!issuedAssets.includes(code)) issuedAssets.push(code);
+            updateAssetUI();
+            renderTrustlines();
+            toast(`✨ ${amt.toLocaleString()} ${code} emitidos exitosamente`);
+        }
+
+        function updateAssetUI() {
+            if (!currentAccount) return;
+            document.getElementById('xlmBal').textContent = currentAccount.xlm.toLocaleString('es', { minimumFractionDigits: 2 });
+            let html = '';
+            for (let [code, bal] of Object.entries(currentAccount.assets)) {
+                html += `<div class="balance-row"><span><span class="asset-badge">💎 ${code}</span></span><span class="balance-amt" style="color:var(--green)">${bal.toLocaleString()}</span></div>`;
+            }
+            document.getElementById('assetBalances').innerHTML = html;
+        }
+
+        function renderTrustlines() {
+            const el = document.getElementById('trustlines');
+            if (!issuedAssets.length) { el.innerHTML = '<p style="font-size:.82rem;color:var(--muted)">No hay trustlines activas.</p>'; return; }
+            el.innerHTML = issuedAssets.map(a =>
+                `<div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.82rem">
+      <span>✅ ${a}</span><span style="color:var(--green);font-size:.72rem">Activa · -0.5 XLM</span>
+    </div>`
+            ).join('');
+        }
+
+        function addTrust() {
+            const code = document.getElementById('trustAsset').value.trim().toUpperCase();
+            if (!code) { toast('⚠️ Ingresa un código de activo'); return; }
+            if (!currentAccount) { genAccount(); }
+            if (currentAccount.xlm < 0.5) { toast('⚠️ XLM insuficiente para trustline (necesitas 0.5 XLM)'); return; }
+            if (issuedAssets.includes(code)) { toast('ℹ️ Trustline ya existe para ' + code); return; }
+            currentAccount.xlm -= 0.5;
+            currentAccount.assets[code] = 0;
+            issuedAssets.push(code);
+            updateAssetUI();
+            renderTrustlines();
+            document.getElementById('trustAsset').value = '';
+            toast(`🔗 Trustline establecida con ${code}. Reserva: -0.5 XLM`);
+        }
+
+        function placeOrder(side) {
+            const amt = parseFloat(document.getElementById('dexAmt').value);
+            const price = parseFloat(document.getElementById('dexPrice').value);
+            const code = document.getElementById('assetCode').value.trim().toUpperCase() || 'TOKEN';
+            if (!amt || !price) { toast('⚠️ Ingresa cantidad y precio'); return; }
+            orders.unshift({ side, amt, price, code, id: Date.now() });
+            if (orders.length > 6) orders.pop();
+            renderOrderBook();
+            toast(side === 'buy' ? `📗 Orden de COMPRA: ${amt} ${code} a ${price} XLM` : `📕 Orden de VENTA: ${amt} ${code} a ${price} XLM`);
+        }
+
+        function renderOrderBook() {
+            document.getElementById('orderBook').innerHTML = orders.map(o =>
+                `<div class="dex-order order-${o.side}">
+      <div><span class="pill pill-${o.side}">${o.side === 'buy' ? 'COMPRAR' : 'VENDER'}</span> <strong>${o.amt} ${o.code}</strong></div>
+      <div style="color:var(--muted)">${o.price} XLM</div>
+    </div>`
+            ).join('');
+        }
+
+        // === INIT ===
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        drawNetwork();
+
+        // Seed demo network
+        setTimeout(() => {
+            const cx = canvas.width / 2, cy = canvas.height / 2;
+            addNode(cx, cy, 'validator-full');
+            addNode(cx - 150, cy - 80, 'validator-full');
+            addNode(cx + 150, cy - 80, 'validator-full');
+            addNode(cx - 200, cy + 80, 'validator-basic');
+            addNode(cx + 200, cy + 80, 'validator-basic');
+            addNode(cx, cy + 150, 'rpc');
+            addNode(cx - 280, cy, 'watcher');
+            addNode(cx + 280, cy, 'archiver');
+            toast('🌟 Red demo cargada — 8 nodos iniciales');
+        }, 300);
+    </script>
+</body>
+
+</html>
