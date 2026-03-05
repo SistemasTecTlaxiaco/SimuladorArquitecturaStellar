@@ -588,7 +588,13 @@
                     <button class="btn-danger" onclick="clearNetwork()">🗑 Limpiar Red</button>
                 </div>
                 <div class="card">
-                    <h3>📊 Estadísticas</h3>
+                    <h3>� Estado de Transacción</h3>
+                    <div id="txMonitor" style="font-size: .82rem; color: var(--muted); line-height: 1.5;">
+                        <em>En espera. Envía una transacción...</em>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>�📊 Estadísticas</h3>
                     <div class="stat-row"><span>Nodos Totales</span><span class="stat-val" id="s-total">0</span></div>
                     <div class="stat-row"><span>Validadores</span><span class="stat-val" id="s-val">0</span></div>
                     <div class="stat-row"><span>Observadores</span><span class="stat-val" id="s-obs">0</span></div>
@@ -925,6 +931,10 @@
             // 3. Validators to receive the tx
             let validators = nodes.filter(n => n.type.startsWith('validator'));
 
+            // Monitor updates
+            const monitor = document.getElementById('txMonitor');
+            monitor.innerHTML = `<div style="color:var(--gold); margin-bottom:.3rem"><strong>[1/4] Pendiente:</strong> Viajando al Gateway...</div>`;
+
             // Step 1: Send from Source to Gateway (if different)
             let currentDelay = 0;
             if (gateway && gateway !== src) {
@@ -940,6 +950,7 @@
             // Step 2: Gateway forwards to Validators
             if (validators.length > 0) {
                 setTimeout(() => {
+                    monitor.innerHTML += `<div style="color:var(--accent); margin-bottom:.3rem"><strong>[2/4] Propagación:</strong> Hacia Validadores...</div>`;
                     gateway.pulse = 1;
                     validators.forEach(v => {
                         packets.push({
@@ -951,6 +962,7 @@
 
                 // Step 3: Validators Gossip (SCP Consensus miniature wave)
                 setTimeout(() => {
+                    monitor.innerHTML += `<div style="color:var(--primary); margin-bottom:.3rem"><strong>[3/4] Validando:</strong> Consenso SCP y FBA...</div>`;
                     validators.forEach(v1 => {
                         v1.pulse = 0.8;
                         validators.forEach(v2 => {
@@ -963,26 +975,36 @@
                         });
                     });
                 }, currentDelay + 600); // Trigger gossip after tx reaches validators
+
+                // Step 4: Finality (Commit to ledger)
+                setTimeout(() => {
+                    monitor.innerHTML += `<div style="color:var(--green)"><strong>[4/4] ¡Confirmada! ✅</strong> Ledger actualizado (3.5s)</div>`;
+                    txCount++;
+                    ledger++;
+                    updateStats();
+                }, currentDelay + 2500); // Simulate Stellar's 3-5 sec finality
+
             } else if (gateway !== src) {
                 // If no validators exist, just send to a random node
                 const dst = nodes[Math.floor(Math.random() * nodes.length)];
                 setTimeout(() => {
+                    monitor.innerHTML += `<div style="color:var(--red); margin-bottom:.3rem">⚠️ Sin validadores. Propagación fallida.</div>`;
                     packets.push({
                         x: gateway.x, y: gateway.y, sx: gateway.x, sy: gateway.y, ex: dst.x, ey: dst.y,
                         prog: 0, color: '#f6c90e', size: 5, speed: 0.02
                     });
+                    txCount++; updateStats();
                 }, currentDelay);
             } else {
                 // Fallback: Random to Random
                 const dst = nodes[Math.floor(Math.random() * nodes.length)];
+                monitor.innerHTML += `<div style="color:var(--red); margin-bottom:.3rem">⚠️ Sin validadores. Envío fallido.</div>`;
                 packets.push({
                     x: src.x, y: src.y, sx: src.x, sy: src.y, ex: dst.x, ey: dst.y,
                     prog: 0, color: '#f6c90e', size: 5, speed: 0.02
                 });
+                txCount++; updateStats();
             }
-
-            txCount++;
-            updateStats();
         }
 
         function startConsensusWave() {
