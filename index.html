@@ -582,6 +582,9 @@
                     <button class="btn-primary" style="background:linear-gradient(135deg,#00e5a0,#4fc3f7)"
                         onclick="startConsensusWave()">🌊 Ola de Consenso</button>
                     <div style="height:.5rem"></div>
+                    <button class="btn-primary" style="background:linear-gradient(135deg,#f6c90e,#ff9a3c);color:#13132a"
+                        onclick="validateArchitecture()">🔎 Validar Arquitectura</button>
+                    <div style="height:.5rem"></div>
                     <button class="btn-danger" onclick="clearNetwork()">🗑 Limpiar Red</button>
                 </div>
                 <div class="card">
@@ -1002,6 +1005,48 @@
             nodes = []; packets = [];
             document.getElementById('nodeInfo').innerHTML = '👆 Haz clic en un nodo para ver su información detallada.';
             updateStats();
+        }
+
+        function validateArchitecture() {
+            if (nodes.length === 0) {
+                document.getElementById('nodeInfo').innerHTML = '⚠️ <strong>La red está vacía.</strong> Añade nodos primero.';
+                toast('⚠️ Red vacía');
+                return;
+            }
+
+            const valFull = nodes.filter(n => n.type === 'validator-full').length;
+            const valBasic = nodes.filter(n => n.type === 'validator-basic').length;
+            const rpc = nodes.filter(n => n.type === 'rpc').length;
+            const archiver = nodes.filter(n => n.type === 'archiver').length;
+
+            const totalVal = valFull + valBasic;
+            let issues = [];
+            let isPerfect = true;
+
+            if (totalVal < 3) {
+                issues.push('❌ <strong>Pocos Validadores:</strong> Necesita al menos 3 para tener un Quórum tolerante a fallos.');
+                isPerfect = false;
+            }
+            if (valFull < 1) {
+                issues.push('❌ <strong>Sin Validador Completo:</strong> Nadie en tu red publicará y conservará el historial del ledger.');
+                isPerfect = false;
+            }
+            if (rpc < 1) {
+                issues.push('❌ <strong>Falta Nodo RPC:</strong> Las aplicaciones, dApps o billeteras no tienen un Gateway para conectarse.');
+                isPerfect = false;
+            }
+            if (archiver < 1) {
+                issues.push('⚠️ <strong>Sin Nodo Archiver:</strong> Opcional pero recomendado para que nodos nuevos se sincronicen rápido.');
+                isPerfect = false;
+            }
+
+            if (isPerfect) {
+                document.getElementById('nodeInfo').innerHTML = `🌟 <strong>¡Excelente Arquitectura!</strong><br><br>Tu red tiene Gateway para usuarios (RPC), publica historia, tiene quórum tolerante a fallos y permite una buena sincronización. ¡Está lista! ✅`;
+                toast('✅ Estructura Perfecta');
+            } else {
+                document.getElementById('nodeInfo').innerHTML = `📊 <strong>Diagnóstico de la Red:</strong><br><br>` + issues.join('<br><br>');
+                toast('⚠️ Arquitectura con advertencias');
+            }
         }
 
         function drawNetwork() {
